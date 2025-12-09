@@ -12,8 +12,8 @@ if "messages" not in st.session_state:
         {"role": "system", "content": read_file("./context.txt")}
     ]
 
-st.title("🕶️ Pablo – Le Parrain du Chatbot")
-st.write("Parle au Parrain… mais n’oublie pas qu’il ne se remet **jamais** en question.")
+st.title("🕶️ Test - Chatbot")
+st.write("Test chatbot")
 
 # -------------------------
 # AFFICHAGE DE L’HISTORIQUE
