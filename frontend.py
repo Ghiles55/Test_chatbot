@@ -1,16 +1,18 @@
 import streamlit as st
 from backend import ask_pablo, read_file
 import time
+import json
+
 
 st.set_page_config(page_title="Pablo – Le Parrain du Chatbot", page_icon="🕶️")
 
 # -------------------------
 # INITIALISATION DE LA MEMOIRE
 # -------------------------
-if "messages" not in st.session_state:
+'''if "messages" not in st.session_state:
     st.session_state.messages = [
         {"role": "system", "content": read_file("./context.txt")}
-    ]
+    ]'''
 
 st.title("🕶️ Test - Chatbot")
 st.write("Test chatbot")
@@ -26,7 +28,8 @@ for msg in st.session_state.messages:
 # -------------------------
 # ZONE DE SAISIE UTILISATEUR
 # -------------------------
-user_input = st.chat_input("Que veux-tu demander à Pablo ?")
+user_input = st.file_uploader("Importer un fichier JSON", type=["json"])
+
 
 if user_input:
 
