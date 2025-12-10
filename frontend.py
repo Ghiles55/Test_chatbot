@@ -3,65 +3,98 @@ from backend import ask_pablo, read_file
 import time
 import json
 
-
 st.set_page_config(page_title="Pablo – Le Parrain du Chatbot", page_icon="🕶️")
 
 # -------------------------
-# INITIALISATION DE LA MEMOIRE
+# 1. INITIALISATION DE LA MÉMOIRE (Dé-commenté et sécurisé)
 # -------------------------
-'''if "messages" not in st.session_state:
+if "messages" not in st.session_state:
+    # On initialise avec le system prompt s'il existe, sinon liste vide
+    try:
+        sys_content = read_file("./context.txt")
+    except:
+        sys_content = "Tu es un assistant utile."  # Fallback si le fichier n'existe pas
+
     st.session_state.messages = [
-        {"role": "system", "content": read_file("./context.txt")}
-    ]'''
+        {"role": "system", "content": sys_content}
+    ]
 
-st.title("🕶️ Test - Chatbot")
-st.write("Test chatbot")
+st.title("🕶️ Test - Chatbot JSON")
+st.write("Chargez un fichier JSON pour l'analyser.")
 
 # -------------------------
-# AFFICHAGE DE L’HISTORIQUE
+# 2. AFFICHAGE DE L’HISTORIQUE
 # -------------------------
 for msg in st.session_state.messages:
-    if msg["role"] != "system":  # ne pas afficher le system prompt
+    if msg["role"] != "system":
         with st.chat_message(msg["role"]):
-            st.write(msg["content"])
+            # Si le contenu ressemble à du JSON, on tente de l'afficher proprement
+            try:
+                # On vérifie si c'est un JSON valide pour l'affichage pretty
+                json_data = json.loads(msg["content"])
+                st.json(json_data)
+            except:
+                st.write(msg["content"])
 
 # -------------------------
-# ZONE DE SAISIE UTILISATEUR
+# 3. ZONE D'UPLOAD DE FICHIER
 # -------------------------
-user_input = st.file_uploader("Importer un fichier JSON", type=["json"])
+uploaded_file = st.file_uploader("Importer un fichier JSON", type=["json"])
 
+if uploaded_file:
+    try:
+        # Lecture et conversion du fichier JSON en dictionnaire Python
+        json_data = json.load(uploaded_file)
+        # Conversion en chaîne de caractères pour l'envoi au LLM
+        json_string = json.dumps(json_data, indent=2, ensure_ascii=False)
 
-if user_input:
+        # --- VERIFICATION ANTI-DOUBLON ---
+        # On regarde le dernier message utilisateur pour voir si c'est le même contenu.
+        # Cela évite que le bot réponde en boucle à chaque rafraîchissement de page.
+        last_user_msg = None
+        for msg in reversed(st.session_state.messages):
+            if msg["role"] == "user":
+                last_user_msg = msg["content"]
+                break
 
-    # Ajout du message utilisateur à la mémoire
-    st.session_state.messages.append({"role": "user", "content": user_input})
+        # Si le contenu est nouveau, on traite
+        if last_user_msg != json_string:
 
-    # Affichage instantané côté utilisateur
-    with st.chat_message("user"):
-        st.write(user_input)
+            # Ajout à la mémoire
+            st.session_state.messages.append({"role": "user", "content": json_string})
 
-    # -------------------------
-    # APPEL AU BACKEND GROQ
-    # -------------------------
-    with st.chat_message("assistant"):
-        placeholder = st.empty()
-        full_response = ""
+            # Affichage immédiat du fichier uploadé dans le chat
+            with st.chat_message("user"):
+                st.json(json_data)
 
-        # Envoi au backend
-        stream = ask_pablo(chat_history=st.session_state.messages)
+            # -------------------------
+            # 4. APPEL AU BACKEND GROQ
+            # -------------------------
+            with st.chat_message("assistant"):
+                placeholder = st.empty()
+                full_response = ""
 
-        # Lecture du stream token par token
-        for chunk in stream:
-            if chunk.choices[0].delta.content is None:
-                continue
+                # Envoi au backend
+                # Note: Assure-toi que ask_pablo gère bien les gros textes si le JSON est volumineux
+                stream = ask_pablo(chat_history=st.session_state.messages)
 
-            token = chunk.choices[0].delta.content
-            full_response += token
-            placeholder.write(full_response)
+                # Lecture du stream
+                for chunk in stream:
+                    # Gestion des différents types de réponses (selon la lib utilisée : openai, groq, etc.)
+                    content = chunk.choices[0].delta.content
+                    if content:
+                        full_response += content
+                        placeholder.write(full_response)
 
-            time.sleep(0.01)
+                    # Petit délai pour effet visuel (optionnel, peut être retiré pour plus de vitesse)
+                    time.sleep(0.005)
 
-        # Ajout à la mémoire
-        st.session_state.messages.append(
-            {"role": "assistant", "content": full_response}
-        )
+                    # Sauvegarde de la réponse assistant
+                st.session_state.messages.append(
+                    {"role": "assistant", "content": full_response}
+                )
+
+    except json.JSONDecodeError:
+        st.error("Le fichier uploadé n'est pas un JSON valide.")
+    except Exception as e:
+        st.error(f"Une erreur s'est produite : {e}")
