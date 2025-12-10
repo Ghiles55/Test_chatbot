@@ -2,6 +2,8 @@ import streamlit as st
 from backend import ask_pablo, read_file
 import time
 import json
+from fpdf import FPDF
+import io
 
 st.set_page_config(page_title="Pablo – Traitement Automatisé", page_icon="🕶️")
 
@@ -122,8 +124,6 @@ if send_button and uploaded_files:
     except Exception as e:
         st.error(f"Erreur durant le traitement : {e}")
 
-from fpdf import FPDF
-import io
 
 
 def create_pdf(json_data):
