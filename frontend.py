@@ -17,7 +17,7 @@ except:
 if "messages" not in st.session_state:
     st.session_state.messages = [{"role": "system", "content": sys_content}]
 
-st.title("🕶️ Pablo - Analyse Automatisée")
+st.title("🕶️ Sonalyze - Analyse Automatisée")
 st.write("Le système appliquera les instructions de votre `context.txt` à chaque fichier.")
 
 # -------------------------
@@ -121,3 +121,63 @@ if send_button and uploaded_files:
 
     except Exception as e:
         st.error(f"Erreur durant le traitement : {e}")
+
+from fpdf import FPDF
+import io
+
+
+def create_pdf(json_data):
+    # Création de l'objet PDF
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+
+    # Titre
+    pdf.set_font("Arial", style="B", size=16)
+    pdf.cell(200, 10, txt="Diagnostic Acoustic Mind", ln=1, align="C")
+    pdf.ln(10)
+
+    # Note Globale
+    if "interpretation" in json_data:
+        note = json_data["interpretation"].get("note_globale", "N/A")
+        pdf.set_font("Arial", style="B", size=14)
+        pdf.cell(200, 10, txt=f"Note Globale : {note}", ln=1)
+
+        pdf.set_font("Arial", size=12)
+        explication = json_data["interpretation"].get("explication_note", "")
+        # multi_cell permet le retour à la ligne automatique
+        pdf.multi_cell(0, 10, txt=f"Analyse : {explication}")
+        pdf.ln(5)
+
+    # Recommandations (Exemple d'itération)
+    if "recommandations" in json_data:
+        pdf.set_font("Arial", style="B", size=14)
+        pdf.cell(200, 10, txt="Recommandations", ln=1)
+        pdf.set_font("Arial", size=12)
+
+        for reco in json_data["recommandations"]:
+            action = reco.get("action", "")
+            cout = reco.get("cout_estime", "")
+            pdf.multi_cell(0, 10, txt=f"- {action} (Coût : {cout})")
+
+    # Retourne le contenu binaire du PDF
+    return pdf.output(dest="S").encode("latin-1", errors="replace")  # latin-1 pour fpdf basic
+
+
+# --- DANS TON SCRIPT PRINCIPAL (Après avoir reçu le full_response JSON) ---
+
+# On suppose que full_response est ton JSON final sous forme de dictionnaire Python
+# Si c'est un string, fais d'abord : data_dict = json.loads(full_response)
+
+# Bouton de téléchargement
+st.success("Analyse terminée !")
+
+# On génère le PDF en mémoire
+pdf_bytes = create_pdf(json.loads(full_response))  # Attention à bien parser le JSON avant
+
+st.download_button(
+    label="📄 Télécharger le Rapport PDF",
+    data=pdf_bytes,
+    file_name="mon_diagnostic_acoustique.pdf",
+    mime="application/pdf"
+)
