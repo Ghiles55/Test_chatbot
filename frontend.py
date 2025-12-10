@@ -126,7 +126,7 @@ if send_button and uploaded_files:
 
 
 
-def create_pdf(json_data):
+'''def create_pdf(json_data):
     # Création de l'objet PDF
     pdf = FPDF()
     pdf.add_page()
@@ -180,4 +180,4 @@ st.download_button(
     data=pdf_bytes,
     file_name="mon_diagnostic_acoustique.pdf",
     mime="application/pdf"
-)
+)'''
