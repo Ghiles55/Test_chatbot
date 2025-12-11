@@ -62,8 +62,8 @@ if send_button and uploaded_files:
             json_str = json.dumps(file_content, separators=(',', ':'), ensure_ascii=False)
 
             # On coupe si > 120k caractères (approx 30k tokens) pour garder de la place pour la réponse
-            if len(json_str) > 120000:
-                json_str = json_str[:120000] + "... (tronqué)"
+            if len(json_str) > 250000:
+                json_str = json_str[:250000] + "... (tronqué)"
 
             # --- C'est ici que la magie opère ---
             # On envoie : LE SYSTEM PROMPT + LE FICHIER
