@@ -60,7 +60,7 @@ if send_button and uploaded_files:
 
             # Minification pour économiser les tokens
             json_str = json.dumps(file_content, separators=(',', ':'), ensure_ascii=False)
-            print(len(json_str))
+            st.write(len(json_str))
 
             # On coupe si > 120k caractères (approx 30k tokens) pour garder de la place pour la réponse
             if len(json_str) > 500000:
